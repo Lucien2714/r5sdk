@@ -84,6 +84,11 @@ static void HostState_KeepAlive()
 	{
 		pszHostIp = hostip->GetString();
 	}
+	int nHostPort = pylon_host_port_override.GetInt();
+	if (nHostPort <= 0)
+	{
+		nHostPort = hostport->GetInt();
+	}
 
 	const NetGameServer_t gameServer
 	{
@@ -93,7 +98,7 @@ static void HostState_KeepAlive()
 		g_pHostState->m_levelName,
 		v_Playlists_GetCurrent(),
 		pszHostIp,
-		hostport->GetInt(),
+		nHostPort,
 		g_pNetKey->GetBase64NetKey(),
 		*g_nServerRemoteChecksum,
 		SDK_VERSION,
