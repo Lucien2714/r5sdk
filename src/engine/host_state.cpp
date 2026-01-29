@@ -79,6 +79,12 @@ static void HostState_KeepAlive()
 		return;
 	}
 
+	const char* pszHostIp = pylon_host_ip_override.GetString();
+	if (!pszHostIp || !*pszHostIp)
+	{
+		pszHostIp = hostip->GetString();
+	}
+
 	const NetGameServer_t gameServer
 	{
 		hostname->GetString(),
@@ -86,7 +92,7 @@ static void HostState_KeepAlive()
 		pylon_host_visibility.GetInt() == ServerVisibility_e::HIDDEN,
 		g_pHostState->m_levelName,
 		v_Playlists_GetCurrent(),
-		hostip->GetString(),
+		pszHostIp,
 		hostport->GetInt(),
 		g_pNetKey->GetBase64NetKey(),
 		*g_nServerRemoteChecksum,
