@@ -377,7 +377,7 @@ static void LiveAPI_SetVersion(rtech::liveapi::Version* const msg)
 
 static void LiveAPI_SetNucleusHash(std::string* const msg, const SQString* const nucleusId)
 {
-	static const char hexChars[] = "0123456789abcdef";
+	/*static const char hexChars[] = "0123456789abcdef";
 	uint8_t nucleusIdHash[LIVEAPI_SHA512_HASH_SIZE];
 
 	mbedtls_sha512(reinterpret_cast<const uint8_t*>(nucleusId->_val), nucleusId->_len, nucleusIdHash, NULL);
@@ -393,7 +393,9 @@ static void LiveAPI_SetNucleusHash(std::string* const msg, const SQString* const
 	{
 		(*msg)[i * 2] = hexChars[(nucleusIdHash[i] >> 4) & 0xf];
 		(*msg)[i * 2 + 1] = hexChars[nucleusIdHash[i] & 0xf];
-	}
+	}*/
+	msg->reserve(nucleusId->_len);
+	msg->assign(nucleusId->_val, nucleusId->_len);
 }
 
 static bool LiveAPI_SetPlayerIdentityFields(HSQUIRRELVM const v, const SQTable* const table, rtech::liveapi::Player* const playerMsg)
