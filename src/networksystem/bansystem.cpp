@@ -285,6 +285,13 @@ void CBanSystem::BanPlayerById(const char* playerHandle, const char* reason)
 	AuthorPlayerById(playerHandle, true, reason);
 }
 
+void CBanSystem::BanPlayerByNId(const char* playerHandle, const char* reason)
+{
+	if (!VALID_CHARSTAR(playerHandle))
+		return;
+
+	AuthorPlayerByNId(playerHandle, true, reason);
+}
 static bool BanSystem_ConvertAddress(const char* const address, in6_addr* const addr)
 {
 	const int ret = inet_pton(AF_INET6, address, addr);
@@ -471,6 +478,59 @@ void CBanSystem::AuthorPlayerById(const char* playerHandle, const bool shouldBan
 		Msg(eDLL_T::SERVER, "Kicked '%s' from server\n", playerHandle);
 	}
 }
+void CBanSystem::AuthorPlayerByNId(const char* playerHandle, const bool shouldBan, const char* reason)
+{
+	Assert(VALID_CHARSTAR(playerHandle));
+
+	bool bOnlyDigits = V_IsAllDigit(playerHandle);
+	bool bDisconnect = false;
+	//bool bSave = false;
+
+	in6_addr playerAdr;
+	char* pEnd = nullptr;
+	const uint64_t nTargetID = strtoull(playerHandle, &pEnd, 10);
+	const char* playerName = nullptr;
+	if (!bOnlyDigits)
+	{
+		return;// Nucleus ID must be all digits.
+	}
+
+	if (!reason)
+		reason = shouldBan ? "Banned from server" : "Kicked from server";
+
+	for (int i = 0; i < gpGlobals->maxClients; i++)
+	{
+		CClient* const pClient = g_pServer->GetClient(i);
+
+		if (bOnlyDigits)
+		{
+			if (nTargetID == pClient->GetNucleusID()) // Match in game
+			{
+				playerName = pClient->GetClientName();
+				bDisconnect = true;
+				pClient->Disconnect(REP_MARK_BAD, reason);
+			}
+			break;
+		}
+	}
+
+	if (shouldBan)
+	{
+		if (AddEntry(&playerAdr,nTargetID))
+		{
+			SaveList();
+			if (bDisconnect) {
+				Msg(eDLL_T::SERVER, "Kicked player: %s and added '%s' to banned list\n", playerName, playerHandle);
+			}	
+			else
+				Msg(eDLL_T::SERVER, "Added '%s' to banned list\n", playerHandle);
+		}
+	}
+	else if (bDisconnect)
+	{
+		Msg(eDLL_T::SERVER, "Kicked %s: '%s' from server\n", playerName, playerHandle);
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Console command handlers
@@ -481,7 +541,8 @@ enum KickType_e
 	KICK_NAME = 0,
 	KICK_ID,
 	BAN_NAME,
-	BAN_ID
+	BAN_ID,
+	BAN_NID
 };
 
 static void _Author_Client_f(const CCommand& args, const KickType_e type)
@@ -515,6 +576,10 @@ static void _Author_Client_f(const CCommand& args, const KickType_e type)
 		g_BanSystem.BanPlayerById(args.Arg(1), szReason);
 		break;
 	}
+	case BAN_NID:
+	{
+		g_BanSystem.BanPlayerByNId(args.Arg(1), szReason);
+	}
 	default:
 	{
 		// Code bug.
@@ -538,6 +603,10 @@ static void Host_BanID_f(const CCommand& args)
 {
 	_Author_Client_f(args, KickType_e::BAN_ID);
 }
+static void Host_BanNID_f(const CCommand& args)
+{
+	_Author_Client_f(args, KickType_e::BAN_NID);
+}
 static void Host_Unban_f(const CCommand& args)
 {
 	if (args.ArgC() < 2)
@@ -557,6 +626,7 @@ static ConCommand kick("kick", Host_Kick_f, "Kick a client from the server by us
 static ConCommand kickid("kickid", Host_KickID_f, "Kick a client from the server by handle, nucleus id or ip address", FCVAR_RELEASE, nullptr, "kickid \"<handle>\"/\"<nucleusId>/<ipAddress>\"");
 static ConCommand ban("ban", Host_Ban_f, "Bans a client from the server by user name", FCVAR_RELEASE, nullptr, "ban <userId>");
 static ConCommand banid("banid", Host_BanID_f, "Bans a client from the server by handle, nucleus id or ip address", FCVAR_RELEASE, nullptr, "banid \"<handle>\"/\"<nucleusId>/<ipAddress>\"");
+static ConCommand bannid("bannid", Host_BanNID_f, "Bans a client from the server by nucleus id ", FCVAR_RELEASE, nullptr, "bannid \"<nucleusId>\"");
 static ConCommand unban("unban", Host_Unban_f, "Unbans a client from the server by nucleus id or ip address", FCVAR_RELEASE, nullptr, "unban \"<nucleusId>\"/\"<ipAddress>\"");
 static ConCommand reload_banlist("banlist_reload", Host_ReloadBanList_f, "Reloads the banned list", FCVAR_RELEASE);
 

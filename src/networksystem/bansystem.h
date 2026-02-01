@@ -52,6 +52,8 @@ public:
 	void BanPlayerByName(const char* playerName, const char* reason = nullptr);
 	void BanPlayerById(const char* playerHandle, const char* reason = nullptr);
 
+	void BanPlayerByNId(const char* playerHandle, const char* reason = nullptr);
+
 	void UnbanPlayer(const char* criteria);
 
 private:
@@ -62,7 +64,7 @@ private:
 
 	void AuthorPlayerByName(const char* playerName, const bool bBan, const char* reason = nullptr);
 	void AuthorPlayerById(const char* playerHandle, const bool bBan, const char* reason = nullptr);
-
+	void AuthorPlayerByNId(const char* playerHandle, const bool shouldBan, const char* reason);
 	std::unordered_set<NucleusID_t> m_bannedIdList;
 	std::unordered_set<IPv6Wrapper_s, IPv6Hasher_s> m_bannedIpList;
 };
