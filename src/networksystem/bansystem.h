@@ -19,7 +19,8 @@ public:
 			, m_NucleusID(nucleusId)
 			, m_BanType(banType)
 			, m_BanExpiry(banExpiry)
-		{}
+		{
+		}
 
 		inline bool operator==(const Banned_t& other) const
 		{
@@ -42,6 +43,7 @@ public:
 	void Clear();
 
 	bool AddEntry(const netadr_t* const adr, const NucleusID_t nuc);
+	bool AddEntry(const NucleusID_t nuc);
 	bool DeleteEntry(const netadr_t* const adr, const NucleusID_t nuc);
 
 	bool IsBanned(const netadr_t* const adr, const NucleusID_t nuc) const;

@@ -34,7 +34,7 @@ void CBanSystem::LoadList(void)
 		return;
 	}
 
-	const u64 nBufSize = FileSystem()->GetOptimalReadSize(pFile, nFileSize+2);
+	const u64 nBufSize = FileSystem()->GetOptimalReadSize(pFile, nFileSize + 2);
 	char* const pBuf = (char*)FileSystem()->AllocOptimalReadBuffer(pFile, nBufSize, 0);
 
 	const ssize_t nRead = FileSystem()->ReadEx(pBuf, nBufSize, nFileSize, pFile);
@@ -49,7 +49,7 @@ void CBanSystem::LoadList(void)
 	}
 
 	pBuf[nFileSize] = '\0'; // Null terminate the string buffer containing our banned list.
-	pBuf[nFileSize+1] = '\0'; // Double null terminating in case this is an unicode file.
+	pBuf[nFileSize + 1] = '\0'; // Double null terminating in case this is an unicode file.
 
 	rapidjson::Document document;
 	if (document.Parse(pBuf, nRead).HasParseError())
@@ -138,7 +138,7 @@ void CBanSystem::SaveList(void) const
 	{
 		idx++;
 		char adrBuf[INET6_ADDRSTRLEN];
-		
+
 		if (!inet_ntop(AF_INET6, &ip.adr, adrBuf, sizeof(adrBuf)))
 		{
 			Error(eDLL_T::SERVER, NO_ERROR, "%s - Unable to convert listed network address #%zd for write -- skipping...\n", __FUNCTION__, idx);
@@ -169,6 +169,11 @@ void CBanSystem::Clear()
 bool CBanSystem::AddEntry(const netadr_t* const adr, const NucleusID_t nuc)
 {
 	return AddEntry(adr->GetIP(), nuc);
+}
+
+bool CBanSystem::AddEntry(const NucleusID_t nuc)
+{
+	return AddEntry(static_cast<const in6_addr*>(nullptr), nuc);
 }
 
 bool CBanSystem::AddEntry(const in6_addr* const adr, const NucleusID_t nuc)
@@ -485,8 +490,6 @@ void CBanSystem::AuthorPlayerByNId(const char* playerHandle, const bool shouldBa
 	bool bOnlyDigits = V_IsAllDigit(playerHandle);
 	bool bDisconnect = false;
 	//bool bSave = false;
-
-	in6_addr playerAdr;
 	char* pEnd = nullptr;
 	const uint64_t nTargetID = strtoull(playerHandle, &pEnd, 10);
 	const char* playerName = nullptr;
@@ -501,27 +504,23 @@ void CBanSystem::AuthorPlayerByNId(const char* playerHandle, const bool shouldBa
 	for (int i = 0; i < gpGlobals->maxClients; i++)
 	{
 		CClient* const pClient = g_pServer->GetClient(i);
-
-		if (bOnlyDigits)
+		if (nTargetID == pClient->GetNucleusID()) // Match in game
 		{
-			if (nTargetID == pClient->GetNucleusID()) // Match in game
-			{
-				playerName = pClient->GetClientName();
-				bDisconnect = true;
-				pClient->Disconnect(REP_MARK_BAD, reason);
-			}
+			playerName = pClient->GetClientName();
+			bDisconnect = true;
+			pClient->Disconnect(REP_MARK_BAD, reason);
 			break;
 		}
 	}
 
 	if (shouldBan)
 	{
-		if (AddEntry(&playerAdr,nTargetID))
+		if (AddEntry(nTargetID))
 		{
 			SaveList();
 			if (bDisconnect) {
 				Msg(eDLL_T::SERVER, "Kicked player: %s and added '%s' to banned list\n", playerName, playerHandle);
-			}	
+			}
 			else
 				Msg(eDLL_T::SERVER, "Added '%s' to banned list\n", playerHandle);
 		}
